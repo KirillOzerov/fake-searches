@@ -26,36 +26,50 @@ Inference::Inference(const QString& modelPath) : env(ORT_LOGGING_LEVEL_WARNING, 
 }
 
 std::vector<float> Inference::imageToTensor(const QImage& image, int targetHeight, int targetWidth) {
+    // Масштабируем изображение, сохраняя пропорции, чтобы минимальная сторона была 224
     int originalWidth = image.width();
     int originalHeight = image.height();
-    int cropSize = std::min(originalWidth, originalHeight);
-    int xOffset = (originalWidth - cropSize) / 2;
-    int yOffset = (originalHeight - cropSize) / 2;
-    QImage croppedImage = image.copy(xOffset, yOffset, cropSize, cropSize);
+    int newWidth, newHeight;
 
-    QImage resizedImage = croppedImage.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    QImage rgbImage = resizedImage.convertToFormat(QImage::Format_RGB888);
+    if (originalWidth > originalHeight) {
+        newHeight = targetHeight; // 224
+        newWidth = (targetHeight * originalWidth) / originalHeight;
+    } else {
+        newWidth = targetWidth; // 224
+        newHeight = (targetWidth * originalHeight) / originalWidth;
+    }
 
-    std::vector<float> tensor;
-    tensor.reserve(3 * targetHeight * targetWidth);
+    QImage scaledImage = image.scaled(newWidth, newHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    // Обрезаем центральную часть 224x224
+    int xOffset = (scaledImage.width() - targetWidth) / 2;
+    int yOffset = (scaledImage.height() - targetHeight) / 2;
+    QImage croppedImage = scaledImage.copy(xOffset, yOffset, targetWidth, targetHeight);
+
+    QImage rgbImage = croppedImage.convertToFormat(QImage::Format_RGB888);
+
+    // Инициализация тензора в формате CHW
+    std::vector<float> tensor(3 * targetHeight * targetWidth);
 
     const float mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
     const float std[3] = {0.26862954f, 0.26130258f, 0.27577711f};
 
-    for (int y = 0; y < targetHeight; ++y) {
-        for (int x = 0; x < targetWidth; ++x) {
-            QRgb pixel = rgbImage.pixel(x, y);
-            float r = static_cast<float>(qRed(pixel)) / 255.0f;
-            float g = static_cast<float>(qGreen(pixel)) / 255.0f;
-            float b = static_cast<float>(qBlue(pixel)) / 255.0f;
+    // Заполняем тензор в формате CHW (Channels, Height, Width)
+    for (int c = 0; c < 3; ++c) {
+        for (int y = 0; y < targetHeight; ++y) {
+            for (int x = 0; x < targetWidth; ++x) {
+                QRgb pixel = rgbImage.pixel(x, y);
+                float value;
+                if (c == 0) value = static_cast<float>(qRed(pixel)) / 255.0f;   // R
+                else if (c == 1) value = static_cast<float>(qGreen(pixel)) / 255.0f; // G
+                else value = static_cast<float>(qBlue(pixel)) / 255.0f;      // B
 
-            r = (r - mean[0]) / std[0];
-            g = (g - mean[1]) / std[1];
-            b = (b - mean[2]) / std[2];
+                // Нормализация
+                value = (value - mean[c]) / std[c];
 
-            tensor.push_back(r);
-            tensor.push_back(g);
-            tensor.push_back(b);
+                // Заполняем тензор
+                tensor[c * targetHeight * targetWidth + y * targetWidth + x] = value;
+            }
         }
     }
 
