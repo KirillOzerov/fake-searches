@@ -24,7 +24,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     resultText->setReadOnly(true);
     layout->addWidget(resultText);
 
-    inference = new Inference("C:/Users/kiril/Documents/test_onnx/models/clipVit_model_opset15.onnx");
+    inference = new Inference(
+        "C:/Users/kiril/Documents/test_onnx/models/clipVit_model_opset15.onnx",
+        "C:/Users/kiril/Documents/test_onnx/models/svm_model_full.onnx",
+        "C:/Users/kiril/Documents/test_onnx/models/scaler_full.onnx"
+        );
 
     connect(loadButton, &QPushButton::clicked, this, &MainWindow::loadImage);
     connect(analyzeButton, &QPushButton::clicked, this, &MainWindow::analyzeImage);
@@ -54,12 +58,16 @@ void MainWindow::analyzeImage() {
         return;
     }
 
-    float prob = inference->analyze(currentImage);
-    if (prob >= 0) {
-        QString result = QString("Модель 1: %1 (Скорее всего %2)")
-                             .arg(prob, 0, 'f', 4)
-                             .arg(prob > 0.5 ? "сгенерировано" : "настоящее");
-        resultText->setText(result);
+    InferenceResult result = inference->analyze(currentImage);
+    if (result.clipProbGan >= 0 && result.svmProbGan >= 0) {
+        QString output;
+        output += QString("Модель 1: %1 (Скорее всего %2)\n")
+                      .arg(result.clipProbGan, 0, 'f', 4)
+                      .arg(result.clipProbGan > 0.5 ? "сгенерировано" : "настоящее");
+        output += QString("Модель 2: %1 (Скорее всего %2)")
+                      .arg(result.svmProbGan, 0, 'f', 4)
+                      .arg(result.svmProbGan > 0.5 ? "сгенерировано" : "настоящее");
+        resultText->setText(output);
     } else {
         resultText->setText("Ошибка при анализе.");
     }
