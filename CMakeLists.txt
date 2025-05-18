@@ -58,3 +58,11 @@ add_custom_command(TARGET test_onnx POST_BUILD
         "${ONNX_RUNTIME_DIR}/lib/onnxruntime.dll"
         $<TARGET_FILE_DIR:test_onnx>
 )
+
+#Настройка OpenCV
+set(OpenCV_DIR "C:/Qt6.8/opencv/build")
+
+find_package(OpenCV REQUIRED)
+include_directories( ${OpenCV_INCLUDE_DIRS})
+
+target_link_libraries(test_onnx PRIVATE Qt6::Core ${OpenCV_LIBS})
