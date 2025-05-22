@@ -1,5 +1,4 @@
 #include "inference.h"
-#include <algorithm>
 #include <cmath>
 #include <QDebug>
 #include <QFile>
@@ -187,12 +186,6 @@ std::vector<float> Inference::normalizeFeatures(const std::vector<float>& featur
 float Inference::runClipInference(const std::vector<float>& inputTensor) {
     Ort::AllocatorWithDefaultOptions allocator;
     Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-    // Выведите входной тензор
-    qDebug() << "First 5 input values:";
-    for (int i = 0; i < 5; ++i) {
-        qDebug() << inputTensor[i];
-    }
 
     auto inputTypeInfo = clipSession.GetInputTypeInfo(0);
     auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
