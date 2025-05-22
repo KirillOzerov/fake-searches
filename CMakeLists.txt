@@ -13,19 +13,6 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-# Настройка OpenCV
-set(OpenCV_DIR "C:/Qt6.8/opencv/build")
-find_package(OpenCV REQUIRED)
-if(OpenCV_FOUND)
-    message(STATUS "OpenCV found: ${OpenCV_DIR}")
-    message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-    message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
-else()
-    message(FATAL_ERROR "OpenCV not found in ${OpenCV_DIR}")
-endif()
-
-# Добавляем пути к заголовкам OpenCV
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Добавляем исходные файлы
 set(SOURCES
@@ -44,11 +31,21 @@ add_executable(test_onnx ${SOURCES} ${HEADERS}
     models/clipVit_model_opset15.onnx
     models/svm_model_full.onnx
     models/scaler_full.onnx
-    aadlygmazf.png
-    aadlygmazf.jpg
-    aaksjqrtil.jpg
-    me_smol.jpg
 )
+
+# Настройка OpenCV
+set(OpenCV_DIR "C:/diploma/opencv/build")
+find_package(OpenCV REQUIRED)
+if(OpenCV_FOUND)
+    message(STATUS "OpenCV found: ${OpenCV_DIR}")
+    message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+    message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
+else()
+    message(FATAL_ERROR "OpenCV not found in ${OpenCV_DIR}")
+endif()
+
+# Добавляем пути к заголовкам OpenCV
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Настройка ONNX Runtime
 set(ONNX_RUNTIME_DIR "C:/diploma/onnxruntime-win-x64-1.20.1")
@@ -78,7 +75,7 @@ add_custom_command(TARGET test_onnx POST_BUILD
 # Копируем OpenCV DLL в папку с исполняемым файлом (для Debug)
 add_custom_command(TARGET test_onnx POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
-        "C:/Qt6.8/opencv/build/x64/vc16/bin/opencv_world4110d.dll"
+        "${OpenCV_DIR}/x64/vc16/bin/opencv_world4110d.dll"
         "$<TARGET_FILE_DIR:test_onnx>"
     COMMENT "Copying OpenCV DLL to output directory"
 )
